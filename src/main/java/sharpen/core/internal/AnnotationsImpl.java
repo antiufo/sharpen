@@ -44,7 +44,7 @@ public class AnnotationsImpl implements Annotations {
     }
 
     private MethodDeclaration findOriginalMethodDeclaration(MethodDeclaration node) {
-        return (MethodDeclaration) findOriginalMethodDeclaration(CSharpBuilder.resolveBinding(node));
+        return (MethodDeclaration) findOriginalMethodDeclaration(CSharpBuilder.rezolveBinding(node));
     }
 
     private BodyDeclaration findOriginalMethodDeclaration(IMethodBinding binding) {
@@ -56,7 +56,7 @@ public class AnnotationsImpl implements Annotations {
     }
 
     private AnnotationTypeMemberDeclaration findOriginalMemberDeclaration(AnnotationTypeMemberDeclaration node) {
-        return (AnnotationTypeMemberDeclaration) findOriginalMethodDeclaration(CSharpBuilder.resolveBinding(node));
+        return (AnnotationTypeMemberDeclaration) findOriginalMethodDeclaration(CSharpBuilder.rezolveBinding(node));
     }
 
     public String annotatedPropertyName(MethodDeclaration node) {

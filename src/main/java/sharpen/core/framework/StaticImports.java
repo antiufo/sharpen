@@ -13,7 +13,7 @@ import static sharpen.core.framework.BindingUtils.isStatic;
 public class StaticImports {
 
     public static boolean isStaticMethodImport(ImportDeclaration imp, IMethodBinding method) {
-        final IBinding binding = CSharpBuilder.resolveBinding(imp);
+        final IBinding binding = CSharpBuilder.rezolveBinding(imp);
         switch (binding.getKind()) {
             case IBinding.TYPE:
                 return imp.isOnDemand() && method.getDeclaringClass() == binding;
@@ -25,7 +25,7 @@ public class StaticImports {
     }
 
     public static boolean isStaticFieldImport(ImportDeclaration imp, IVariableBinding field) {
-        final IBinding binding = CSharpBuilder.resolveBinding(imp);
+        final IBinding binding = CSharpBuilder.rezolveBinding(imp);
         if (binding.getKind() == IBinding.VARIABLE)
             return binding == field;
 
@@ -60,7 +60,7 @@ public class StaticImports {
         if (invocation.getExpression() != null)
             return null;
 
-        final IMethodBinding method = invocation.resolveMethodBinding();
+        final IMethodBinding method = CSharpBuilder.rezolveMethodBinding(invocation);
 
         if (!isStaticImport(method, imports))
             return null;

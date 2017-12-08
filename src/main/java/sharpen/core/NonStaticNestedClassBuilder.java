@@ -80,7 +80,7 @@ public class NonStaticNestedClassBuilder extends AbstractNestedClassBuilder {
 
     @Override
     protected ITypeBinding nestedTypeBinding() {
-        return CSharpBuilder.resolveBinding(_nestedType);
+        return CSharpBuilder.rezolveBinding(_nestedType);
     }
 
 }

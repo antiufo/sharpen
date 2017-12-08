@@ -79,7 +79,7 @@ public class CSAnonymousClassBuilder extends AbstractNestedClassBuilder {
             return;
         }
 
-        final ITypeBinding[] ctorParameterTypes = classInstanceCreation().resolveConstructorBinding().getParameterTypes();
+        final ITypeBinding[] ctorParameterTypes = CSharpBuilder.rezolveConstructorBinding(classInstanceCreation()).getParameterTypes();
 
         if (null == _constructor.chainedConstructorInvocation())
             _constructor.chainedConstructorInvocation(new CSConstructorInvocationExpression(new CSBaseExpression()));
@@ -160,7 +160,7 @@ public class CSAnonymousClassBuilder extends AbstractNestedClassBuilder {
 
     private IMethodBinding currentMethodDeclarationBinding() {
         return _currentBodyDeclaration instanceof MethodDeclaration
-                ? CSharpBuilder.resolveBinding(((MethodDeclaration) _currentBodyDeclaration))
+                ? CSharpBuilder.rezolveBinding(((MethodDeclaration) _currentBodyDeclaration))
                 : null;
     }
 
@@ -193,7 +193,7 @@ public class CSAnonymousClassBuilder extends AbstractNestedClassBuilder {
 
     @Override
     protected ITypeBinding nestedTypeBinding() {
-        return CSharpBuilder.resolveBinding(_node);
+        return CSharpBuilder.rezolveBinding(_node);
     }
 
     private String anonymousInnerClassName() {
@@ -260,7 +260,7 @@ public class CSAnonymousClassBuilder extends AbstractNestedClassBuilder {
 
             public boolean visit(MethodDeclaration node) {
                 IMethodBinding saved = _currentMethodBinding;
-                _currentMethodBinding = CSharpBuilder.resolveBinding(node);
+                _currentMethodBinding = CSharpBuilder.rezolveBinding(node);
                 node.getBody().accept(this);
                 _currentMethodBinding = saved;
                 return false;
@@ -271,7 +271,7 @@ public class CSAnonymousClassBuilder extends AbstractNestedClassBuilder {
             }
 
             public boolean visit(SimpleName node) {
-                IBinding binding = CSharpBuilder.resolveBinding(node);
+                IBinding binding = CSharpBuilder.rezolveBinding(node);
                 if (isExternalLocal(binding)) {
                     _capturedVariables.add((IVariableBinding) binding);
                 }

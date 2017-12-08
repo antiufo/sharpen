@@ -87,7 +87,7 @@ public abstract class Configuration {
 
     private boolean _nativeTypeSystem = false;
 
-    private boolean _ignoreErrors = false;
+    private boolean _ignoreErrors = true;
 
     private final String _runtimeTypeName;
 

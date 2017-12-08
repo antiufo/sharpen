@@ -44,6 +44,8 @@ package sharpen.core.framework;
 
 import org.eclipse.jdt.core.dom.*;
 
+import sharpen.core.CSharpBuilder;
+
 public class BindingUtils {
 
     /**
@@ -235,7 +237,7 @@ public class BindingUtils {
     }
 
     public static boolean isStatic(MethodInvocation invocation) {
-        return isStatic(invocation.resolveMethodBinding());
+        return isStatic(CSharpBuilder.rezolveMethodBinding(invocation));
     }
 
     public static boolean isJavaLangClass(ITypeBinding type) {

@@ -49,7 +49,7 @@ public abstract class AbstractNestedClassBuilder extends CSharpBuilder {
 
     public boolean visit(ThisExpression node) {
         if (null == node.getQualifier()) return super.visit(node);
-        pushExpression(createEnclosingThisReference(node.getQualifier().resolveTypeBinding(), true));
+        pushExpression(createEnclosingThisReference(CSharpBuilder.rezolveTypeBinding(node.getQualifier()), true));
         return false;
     }
 
@@ -62,7 +62,7 @@ public abstract class AbstractNestedClassBuilder extends CSharpBuilder {
     }
 
     private boolean isInstanceFieldReference(SimpleName name) {
-        IBinding binding = CSharpBuilder.resolveBinding(name);
+        IBinding binding = CSharpBuilder.rezolveBinding(name);
         if (IBinding.VARIABLE != binding.getKind()) return false;
         return ((IVariableBinding) binding).isField();
     }
@@ -108,12 +108,12 @@ public abstract class AbstractNestedClassBuilder extends CSharpBuilder {
     }
 
     private String mappedName(SimpleName name) {
-        IBinding binding = CSharpBuilder.resolveBinding(name);
+        IBinding binding = CSharpBuilder.rezolveBinding(name);
         return binding instanceof IMethodBinding ? mappedMethodName((IMethodBinding) binding) : identifier(name);
     }
 
     private boolean isStaticMember(SimpleName name) {
-        return Modifier.isStatic(CSharpBuilder.resolveBinding(name).getModifiers());
+        return Modifier.isStatic(CSharpBuilder.rezolveBinding(name).getModifiers());
     }
 
     private boolean isSuperclass(ITypeBinding type, ITypeBinding candidate) {
@@ -129,7 +129,7 @@ public abstract class AbstractNestedClassBuilder extends CSharpBuilder {
     }
 
     private ITypeBinding getDeclaringClass(Name reference) {
-        IBinding binding = CSharpBuilder.resolveBinding(reference);
+        IBinding binding = CSharpBuilder.rezolveBinding(reference);
         switch (binding.getKind()) {
             case IBinding.METHOD: {
                 return ((IMethodBinding) binding).getDeclaringClass().getTypeDeclaration();

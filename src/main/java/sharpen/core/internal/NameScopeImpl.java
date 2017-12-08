@@ -31,7 +31,7 @@ public class NameScopeImpl implements NameScope {
             if (meth.isConstructor()) {
                 continue;
             }
-            _mappedMethodDeclarations.add(my(Mappings.class).mappedMethodName(CSharpBuilder.resolveBinding(meth)));
+            _mappedMethodDeclarations.add(my(Mappings.class).mappedMethodName(CSharpBuilder.rezolveBinding(meth)));
         }
     }
 
