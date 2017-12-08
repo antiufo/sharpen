@@ -26,6 +26,8 @@ import org.eclipse.jdt.core.IBuffer;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jface.text.ITypedRegion;
+
 import sharpen.core.Configuration.MemberMapping;
 import sharpen.core.csharp.ast.*;
 import sharpen.core.framework.*;
@@ -189,7 +191,7 @@ public class CSharpBuilder extends ASTVisitor {
             my(NameScope.class).enterTypeDeclaration(node);
             _ignoreExtends.using(ignoreExtends(node), new Runnable() {
                 public void run() {
-                    final ITypeBinding binding = node.resolveBinding();
+                    final ITypeBinding binding = resolveBinding(node);
                     if (!binding.isNested()) {
                         processTypeDeclaration(node);
                         return;
@@ -358,7 +360,7 @@ public class CSharpBuilder extends ASTVisitor {
             _ignoreExtends.using(ignoreExtends(node), new Runnable() {
                 public void run() {
 
-                    final ITypeBinding binding = node.resolveBinding();
+                    final ITypeBinding binding = resolveBinding(node);
                     if (!binding.isNested()) {
                         processTypeDeclaration(node);
                         return;
@@ -389,7 +391,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private boolean processIgnoredType(AbstractTypeDeclaration node) {
-        if (!SharpenAnnotations.hasIgnoreAnnotation(node) && !hasRemoveAnnotation(node) && !_configuration.isIgnoredType(qualifiedName(node.resolveBinding()))) {
+        if (!SharpenAnnotations.hasIgnoreAnnotation(node) && !hasRemoveAnnotation(node) && !_configuration.isIgnoredType(qualifiedName(resolveBinding(node)))) {
             return false;
         }
         if (isMainType(node)) {
@@ -416,7 +418,7 @@ public class CSharpBuilder extends ASTVisitor {
         if (_configuration.shouldMakePartial(node.getName().getFullyQualifiedName()))
             type.partial(true);
 
-        ITypeBinding typeBinding = node.resolveBinding();
+        ITypeBinding typeBinding = resolveBinding(node);
         addType(typeBinding, type);
         if (auxillaryType != null) {
             addType(typeBinding, auxillaryType);
@@ -465,7 +467,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private String packageNameFor(AbstractTypeDeclaration node) {
-        ITypeBinding type = node.resolveBinding();
+        ITypeBinding type = resolveBinding(node);
         return type.getPackage().getName();
     }
 
@@ -740,7 +742,7 @@ public class CSharpBuilder extends ASTVisitor {
 
     private CSTypeParameter mapTypeParameter(TypeParameter item) {
         CSTypeParameter tp = new CSTypeParameter(identifier(item.getName()));
-        ITypeBinding tb = item.resolveBinding();
+        ITypeBinding tb = resolveBinding(item);
         if (tb != null) {
             for (ITypeBinding binding : mapTypeParameterExtendedType(tb)) {
                 tp.superClass(mappedTypeReference(binding));
@@ -760,7 +762,7 @@ public class CSharpBuilder extends ASTVisitor {
     private CSTypeDeclaration typeDeclarationFor(AbstractTypeDeclaration node, boolean auxillary) {
         final String typeName = typeName(node);
         if (node instanceof TypeDeclaration && ((TypeDeclaration) node).isInterface()) {
-            boolean valid = isValidCSInterface(node.resolveBinding());
+            boolean valid = isValidCSInterface(resolveBinding(node));
             if (valid && auxillary) {
                 return null;
             } else if (valid || (!auxillary && _configuration.separateInterfaceConstants())) {
@@ -803,7 +805,7 @@ public class CSharpBuilder extends ASTVisitor {
         String renamed = annotatedRenaming(node);
         if (renamed != null)
             return renamed;
-        renamed = mappedTypeName(node.resolveBinding());
+        renamed = mappedTypeName(resolveBinding(node));
         if (renamed != null) {
             int i = renamed.lastIndexOf('.');
             if (i != -1)
@@ -874,7 +876,7 @@ public class CSharpBuilder extends ASTVisitor {
             return;
         }
 
-        final ITypeBinding superClassBinding = superclassType.resolveBinding();
+        final ITypeBinding superClassBinding = resolveBinding(superclassType);
         if (null == superClassBinding)
             unresolvedTypeBinding(superclassType);
 
@@ -941,13 +943,13 @@ public class CSharpBuilder extends ASTVisitor {
         final ITypeBinding serializable = resolveWellKnownType("java.io.Serializable");
         for (Object itf : superInterfaceTypes) {
             Type iface = (Type) itf;
-            if (iface.resolveBinding() == serializable) {
+            if (resolveBinding(iface) == serializable) {
                 continue;
             }
             type.addBaseType(mappedTypeReference(iface, false));
         }
 
-        if (!type.isInterface() && node.resolveBinding().isSubTypeCompatible(serializable)) {
+        if (!type.isInterface() && resolveBinding(node).isSubTypeCompatible(serializable)) {
             type.addAttribute(new CSAttribute("System.Serializable"));
         }
     }
@@ -1427,7 +1429,7 @@ public class CSharpBuilder extends ASTVisitor {
         if (!(fragments.get(0) instanceof SimpleName))
             return new CSDocTagNode("?");
         SimpleName name = (SimpleName) fragments.get(0);
-        if (null == name.resolveBinding()) {
+        if (null == resolveBinding(name)) {
             warning(name, "Parameter '" + name + "' not found.");
         }
 
@@ -1504,10 +1506,10 @@ public class CSharpBuilder extends ASTVisitor {
             return false;
         }
 
-        ITypeBinding fieldType = node.getType().resolveBinding();
+        ITypeBinding fieldType = resolveBinding(node.getType());
         CSTypeReferenceExpression typeName = mappedTypeReference(fieldType);
         CSVisibility visibility = mapVisibility(node);
-        if (((VariableDeclarationFragment) node.fragments().get(0)).resolveBinding().getDeclaringClass().isInterface())
+        if (resolveBinding((VariableDeclarationFragment) node.fragments().get(0)).getDeclaringClass().isInterface())
             visibility = CSVisibility.Public;
 
         for (Object item : node.fragments()) {
@@ -1538,7 +1540,7 @@ public class CSharpBuilder extends ASTVisitor {
             fieldType = new CSArrayTypeReference(fieldType, fragment.getExtraDimensions());
         }
         String fieldName = fieldName(fragment);
-        fieldName = _resolver.resolveRename(fragment.resolveBinding(), fieldName);
+        fieldName = _resolver.resolveRename(resolveBinding(fragment), fieldName);
 
         CSField field = new CSField(fieldName, fieldType, fieldVisibility, mapFieldInitializer(fragment));
         if (isConstField(node, fragment)) {
@@ -1589,7 +1591,7 @@ public class CSharpBuilder extends ASTVisitor {
 
     private boolean isConstField(FieldDeclaration node, VariableDeclarationFragment fragment) {
         //
-        if (fragment.resolveBinding().getDeclaringClass().isInterface())
+        if (resolveBinding(fragment).getDeclaringClass().isInterface())
             return true;
         return Modifier.isFinal(node.getModifiers()) && isSupportedConstantType(node.getType()) &&
                 hasConstValue(fragment) && Modifier.isStatic(node.getModifiers());
@@ -1597,11 +1599,11 @@ public class CSharpBuilder extends ASTVisitor {
 
     private boolean isSupportedConstantType(Type type) {
         return type.isPrimitiveType()
-                || type.resolveBinding().getQualifiedName().equals(String.class.getCanonicalName());
+                || resolveBinding(type).getQualifiedName().equals(String.class.getCanonicalName());
     }
 
     private boolean hasConstValue(VariableDeclarationFragment fragment) {
-        return null != fragment.resolveBinding().getConstantValue();
+        return null != resolveBinding(fragment).getConstantValue();
     }
 
     private void processFieldModifiers(CSField field, int modifiers) {
@@ -1676,7 +1678,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private boolean isRemoved(MethodDeclaration node) {
-        return hasRemoveAnnotation(node) || isRemoved(node.resolveBinding());
+        return hasRemoveAnnotation(node) || isRemoved(resolveBinding(node));
     }
 
     private boolean hasRemoveAnnotation(BodyDeclaration node) {
@@ -1816,10 +1818,10 @@ public class CSharpBuilder extends ASTVisitor {
         mapTypeParameters(node.typeParameters(), method);
         mapMethodParts(node, method);
 
-        if (_configuration.junitConversion() && isLegacyTestFixture(node.resolveBinding().getDeclaringClass())) {
+        if (_configuration.junitConversion() && isLegacyTestFixture(resolveBinding(node).getDeclaringClass())) {
             if (method.name().startsWith("Test") && method.visibility() == CSVisibility.Public)
                 method.addAttribute(new CSAttribute("NUnit.Framework.Test"));
-            if (isLegacyTestFixtureClass(node.resolveBinding().getDeclaringClass().getSuperclass())) {
+            if (isLegacyTestFixtureClass(resolveBinding(node).getDeclaringClass().getSuperclass())) {
                 if (method.name().equals("SetUp")) {
                     method.addAttribute(new CSAttribute("NUnit.Framework.SetUp"));
                     method.modifier(CSMethodModifier.Virtual);
@@ -1878,7 +1880,7 @@ public class CSharpBuilder extends ASTVisitor {
             if (vis == CSVisibility.ProtectedInternal && !overriden.getDeclaringClass().isFromSource())
                 vis = CSVisibility.Protected;
             method.visibility(vis);
-        } else if (node.resolveBinding().getDeclaringClass().isInterface()) {
+        } else if (resolveBinding(node).getDeclaringClass().isInterface()) {
             method.visibility(CSVisibility.Public);
         } else {
             mapVisibility(node, method);
@@ -1908,7 +1910,7 @@ public class CSharpBuilder extends ASTVisitor {
 
     private void mapParameter(SingleVariableDeclaration parameter, CSParameterized method) {
         if (method instanceof CSMethod) {
-            IVariableBinding vb = parameter.resolveBinding();
+            IVariableBinding vb = resolveBinding(parameter);
             ITypeBinding[] arguments = vb.getType().getTypeArguments();
             if (arguments.length > 0 && !isMacroType(findDeclaringNode(vb.getType()))) {
                 CSMethod csMethod = (CSMethod) method;
@@ -1953,8 +1955,8 @@ public class CSharpBuilder extends ASTVisitor {
     private void mapMethodParameters(MethodDeclaration node, CSMethod method) {
         for (Object o : node.parameters()) {
             SingleVariableDeclaration p = (SingleVariableDeclaration) o;
-            ITypeBinding parameterType = p.getType().resolveBinding();
-            if (!isGenericRuntimeParameterIdiom(node.resolveBinding(), parameterType)) {
+            ITypeBinding parameterType = resolveBinding(p.getType());
+            if (!isGenericRuntimeParameterIdiom(resolveBinding(node), parameterType)) {
                 mapParameter(p, method);
             }
         }
@@ -2045,7 +2047,7 @@ public class CSharpBuilder extends ASTVisitor {
 
         @Override
         public boolean visit(SimpleName name) {
-            IBinding binding = name.resolveBinding();
+            IBinding binding = resolveBindingOptional(name);
             if (binding == null) {
                 return false;
             }
@@ -2066,7 +2068,7 @@ public class CSharpBuilder extends ASTVisitor {
 
         @Override
         public boolean visit(SimpleName node) {
-            field = node.resolveBinding();
+            field = resolveBinding(node);
             return false;
         }
     }
@@ -2224,7 +2226,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private CSVariableDeclaration createVariableDeclaration(VariableDeclarationFragment variable) {
-        IVariableBinding binding = variable.resolveBinding();
+        IVariableBinding binding = resolveBinding(variable);
         ITypeBinding saved = pushExpectedType(binding.getType());
         CSExpression initializer = mapExpression(variable.getInitializer());
         popExpectedType(saved);
@@ -2333,7 +2335,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     public Object constValue(Name expression) {
-        IBinding binding = expression.resolveBinding();
+        IBinding binding = resolveBinding(expression);
         if (IBinding.VARIABLE == binding.getKind()) {
             return ((IVariableBinding) binding).getConstantValue();
         }
@@ -2377,7 +2379,7 @@ public class CSharpBuilder extends ASTVisitor {
         visitBlock(body, node.getBody());
         for (Object o : node.catchClauses()) {
             CatchClause clause = (CatchClause) o;
-            if (!_configuration.isIgnoredExceptionType(qualifiedName(clause.getException().getType().resolveBinding()))) {
+            if (!_configuration.isIgnoredExceptionType(qualifiedName(resolveBinding(clause.getException().getType())))) {
                 CSCatchClause catchClause = mapCatchClause(clause);
                 catchClause.parent(stmt);
                 stmt.addCatchClause(catchClause);
@@ -2399,7 +2401,7 @@ public class CSharpBuilder extends ASTVisitor {
 
     private CSCatchClause mapCatchClause(CatchClause node) {
         IVariableBinding oldExceptionVariable = _currentExceptionVariable;
-        _currentExceptionVariable = node.getException().resolveBinding();
+        _currentExceptionVariable = resolveBinding(node.getException());
         try {
             CheckVariableUseVisitor check = new CheckVariableUseVisitor(_currentExceptionVariable);
             node.getBody().accept(check);
@@ -2425,7 +2427,7 @@ public class CSharpBuilder extends ASTVisitor {
     private boolean isEmptyCatch(CatchClause clause, CheckVariableUseVisitor check) {
         if (check.used())
             return false;
-        return isThrowable(clause.getException().resolveBinding().getType());
+        return isThrowable(resolveBinding(clause.getException()).getType());
     }
 
     private boolean isThrowable(ITypeBinding declaringClass) {
@@ -2449,7 +2451,7 @@ public class CSharpBuilder extends ASTVisitor {
         if (!(exception instanceof SimpleName)) {
             return false;
         }
-        return ((SimpleName) exception).resolveBinding() == _currentExceptionVariable;
+        return resolveBinding(((SimpleName) exception)) == _currentExceptionVariable;
     }
 
     public boolean visit(BreakStatement node) {
@@ -2565,11 +2567,11 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     public boolean visit(NullLiteral node) {
-        if (node.getParent() instanceof CastExpression && ((CastExpression) node.getParent()).getType().resolveBinding().isTypeVariable()) {
+        if (node.getParent() instanceof CastExpression && resolveBinding(((CastExpression) node.getParent()).getType()).isTypeVariable()) {
             pushExpression(
                     new CSPrefixExpression("default",
                             new CSParenthesizedExpression(
-                                    new CSTypeReference(mappedTypeName(((CastExpression) node.getParent()).getType().resolveBinding()))
+                                    new CSTypeReference(mappedTypeName(resolveBinding(((CastExpression) node.getParent()).getType())))
                             )
                     )
             );
@@ -2595,7 +2597,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     public boolean visit(ArrayCreation node) {
-        ITypeBinding saved = pushExpectedType(node.getType().getElementType().resolveBinding());
+        ITypeBinding saved = pushExpectedType(resolveBinding(node.getType().getElementType()));
         if (node.dimensions().size() > 1) {
             if (null != node.getInitializer()) {
                 notImplemented(node);
@@ -2616,7 +2618,7 @@ public class CSharpBuilder extends ASTVisitor {
      */
     private CSArrayCreationExpression unfoldMultiArrayCreation(ArrayCreation node) {
         ArrayType type = node.getType();
-        if (type.getElementType().resolveBinding().isRawType() && node.getParent() instanceof CastExpression) {
+        if (resolveBinding(type.getElementType()).isRawType() && node.getParent() instanceof CastExpression) {
             // convert explicit casts for raw array creation to generic array creation
             type = (ArrayType) ((CastExpression) node.getParent()).getType();
         }
@@ -2654,7 +2656,7 @@ public class CSharpBuilder extends ASTVisitor {
     private CSArrayCreationExpression mapSingleArrayCreation(ArrayCreation node) {
         ArrayType type = node.getType();
 
-        if (type.getElementType().resolveBinding().isRawType() && node.getParent() instanceof CastExpression) {
+        if (resolveBinding(type.getElementType()).isRawType() && node.getParent() instanceof CastExpression) {
             // convert explicit casts for raw array creation to generic array creation
             type = (ArrayType) ((CastExpression) node.getParent()).getType();
         }
@@ -2702,7 +2704,7 @@ public class CSharpBuilder extends ASTVisitor {
     public boolean visit(EnhancedForStatement node) {
         pushScope();
         CSForEachStatement stmt = new CSForEachStatement(node.getStartPosition(), mapExpression(node.getExpression()));
-        if (BindingUtils.hasWildcardInGenerics(node.getParameter().getType().resolveBinding()) || BindingUtils.hasWildcardInGenerics(node.getExpression().resolveTypeBinding())) {
+        if (BindingUtils.hasWildcardInGenerics(resolveBinding(node.getParameter().getType())) || BindingUtils.hasWildcardInGenerics(node.getExpression().resolveTypeBinding())) {
             stmt.variable(new CSVariableDeclaration(node.getParameter().getName().getIdentifier(), new CSTypeReference("var")));
         } else {
             stmt.variable(createParameter(node.getParameter()));
@@ -2869,7 +2871,7 @@ public class CSharpBuilder extends ASTVisitor {
     public boolean visit(CastExpression node) {
         pushExpression(new CSCastExpression(mappedTypeReference(node.getType(), false), mapExpression(node.getExpression())));
         // Make all byte casts unchecked
-        if (node.getType().resolveBinding().getName().equals("byte"))
+        if (resolveBinding(node.getType()).getName().equals("byte"))
             pushExpression(new CSUncheckedExpression(popExpression()));
         return false;
     }
@@ -2934,7 +2936,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     public boolean visit(InstanceofExpression node) {
-        CSTypeReferenceExpression rightExp = mappedTypeReference(node.getRightOperand().resolveBinding(), false, true);
+        CSTypeReferenceExpression rightExp = mappedTypeReference(resolveBinding(node.getRightOperand()), false, true);
         if (rightExp instanceof CSTypeReference && !((CSTypeReference) rightExp).typeArguments().isEmpty()) {
             CSMethodInvocationExpression mie = new CSMethodInvocationExpression(new CSReferenceExpression(
                     methodName(_configuration.getRuntimeTypeName() + ".InstanceOf")
@@ -2970,7 +2972,7 @@ public class CSharpBuilder extends ASTVisitor {
             return false;
         }
 
-        ITypeBinding fieldType = ((EnumDeclaration) node.getParent()).resolveBinding();
+        ITypeBinding fieldType = resolveBinding((EnumDeclaration) node.getParent());
         CSTypeReferenceExpression typeName = mappedTypeReference(fieldType);
         CSVisibility visibility = mapVisibility(node);
 
@@ -3139,7 +3141,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private boolean isReferenceToRemovedType(Type node) {
-        BodyDeclaration typeDeclaration = findDeclaringNode(node.resolveBinding());
+        BodyDeclaration typeDeclaration = findDeclaringNode(resolveBinding(node));
         if (null == typeDeclaration)
             return false;
         return hasRemoveAnnotation(typeDeclaration);
@@ -3499,7 +3501,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private ITypeBinding getFirstParameterType(MethodDeclaration addListener) {
-        return parameter(addListener, 0).getType().resolveBinding();
+        return resolveBinding(parameter(addListener, 0).getType());
     }
 
     private SingleVariableDeclaration parameter(MethodDeclaration method, final int index) {
@@ -3724,7 +3726,7 @@ public class CSharpBuilder extends ASTVisitor {
             pushTypeReference(node.resolveTypeBinding());
         } else if (_currentExpression == null) {
             String ident = mapVariableName(identifier(node));
-            IBinding b = node.resolveBinding();
+            IBinding b = resolveBinding(node);
             ident = _resolver.resolveRename(b, ident);
             IVariableBinding vb = b instanceof IVariableBinding ? (IVariableBinding) b : null;
             if (vb != null) {
@@ -3814,7 +3816,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private boolean isTypeReference(Name node) {
-        final IBinding binding = node.resolveBinding();
+        final IBinding binding = resolveBinding(node);
         if (null == binding) {
             unresolvedTypeBinding(node);
             return false;
@@ -3890,7 +3892,7 @@ public class CSharpBuilder extends ASTVisitor {
 
     private void pushMemberReferenceExpression(Name qualifier, String name) {
         if (_configuration.separateInterfaceConstants()) {
-            IBinding binding = qualifier.resolveBinding();
+            IBinding binding = resolveBinding(qualifier);
             if (binding instanceof ITypeBinding) {
                 ITypeBinding typeBinding = (ITypeBinding) binding;
                 if (typeBinding.isInterface()) {
@@ -3904,8 +3906,8 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private IVariableBinding variableBinding(Name node) {
-        if (node.resolveBinding() instanceof IVariableBinding) {
-            return (IVariableBinding) node.resolveBinding();
+        if (resolveBinding(node) instanceof IVariableBinding) {
+            return (IVariableBinding) resolveBinding(node);
         }
         return null;
     }
@@ -3975,7 +3977,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private CSVariableDeclaration createParameter(SingleVariableDeclaration declaration) {
-        return createVariableDeclaration(declaration.resolveBinding(), null);
+        return createVariableDeclaration(resolveBinding(declaration), null);
     }
 
     protected void visit(List nodes) {
@@ -3988,7 +3990,7 @@ public class CSharpBuilder extends ASTVisitor {
         if (node instanceof TypeDeclaration && ((TypeDeclaration) node).isInterface())
             return;
 
-        ITypeBinding binding = node.resolveBinding();
+        ITypeBinding binding = resolveBinding(node);
         if (!Modifier.isAbstract(node.getModifiers()))
             return;
 
@@ -4095,7 +4097,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     CSMethodModifier mapMethodModifier(MethodDeclaration method) {
-        if (_currentType.isInterface() || method.resolveBinding().getDeclaringClass().isInterface()) {
+        if (_currentType.isInterface() || resolveBinding(method).getDeclaringClass().isInterface()) {
             return CSMethodModifier.Abstract;
         }
         int modifiers = method.getModifiers();
@@ -4132,7 +4134,7 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     private IMethodBinding getOverridedMethod(MethodDeclaration method) {
-        return getOverridedMethod(method.resolveBinding());
+        return getOverridedMethod(resolveBinding(method));
     }
 
     private IMethodBinding getOverridedMethod(IMethodBinding methodBinding) {
@@ -4232,11 +4234,11 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     protected CSTypeReferenceExpression mappedTypeReference(Type type, boolean forTypeOf) {
-        return mappedTypeReference(type.resolveBinding(), false, forTypeOf);
+        return mappedTypeReference(resolveBinding(type), false, forTypeOf);
     }
 
     protected CSTypeReferenceExpression mappedArrayReference(Type type, int dimension) {
-        ITypeBinding binding = type.resolveBinding();
+        ITypeBinding binding = resolveBinding(type);
         if (dimension > 0) {
             binding = binding.createArrayType(dimension);
         }
@@ -4349,8 +4351,53 @@ public class CSharpBuilder extends ASTVisitor {
     }
 
     protected String mappedMethodName(MethodDeclaration node) {
-        return mappedMethodName(node.resolveBinding());
+        return mappedMethodName(resolveBinding(node));
     }
+    public static IVariableBinding resolveBinding(SingleVariableDeclaration node){
+        return node.resolveBinding();
+    }   
+       public static ITypeBinding resolveBinding(AnonymousClassDeclaration node){
+        return node.resolveBinding();
+    }  
+    public static IBinding resolveBinding(ImportDeclaration node){
+        return node.resolveBinding();
+    }  
+    public static IVariableBinding resolveBinding(VariableDeclarationFragment node){
+        return node.resolveBinding();
+    }  
+    public static IMethodBinding resolveBinding(AnnotationTypeMemberDeclaration node){
+        return node.resolveBinding();
+    }  
+    public static IMethodBinding resolveBinding(MethodDeclaration node){
+        return node.resolveBinding();
+    }  
+    public static ITypeBinding resolveBinding(TypeParameter node){
+        return node.resolveBinding();
+    }  
+    public static ITypeBinding resolveBinding(Type node){
+        return node.resolveBinding();
+    }  
+    public static ITypeBinding resolveBinding(AbstractTypeDeclaration node){
+        return node.resolveBinding();
+    }
+    public static IBinding resolveBinding(Name node){
+        return node.resolveBinding();
+    }
+
+
+
+
+    public static IBinding resolveBindingOptional(Name node){
+        return node.resolveBinding();
+    }
+    
+    public static IBinding resolveBindingOptional(MethodRef node){
+        return node.resolveBinding();
+    }
+    public static IBinding resolveBindingOptional(MemberRef node){
+        return node.resolveBinding();
+    }
+    
 
     protected final String mappedMethodName(IMethodBinding binding) {
         return my(Mappings.class).mappedMethodName(binding);
@@ -4367,9 +4414,9 @@ public class CSharpBuilder extends ASTVisitor {
     private boolean isMappedToProperty(BodyDeclaration original) {
         IMethodBinding binding;
         if (original instanceof MethodDeclaration) {
-            binding = ((MethodDeclaration) original).resolveBinding();
+            binding = resolveBinding(((MethodDeclaration) original));
         } else if (original instanceof AnnotationTypeMemberDeclaration) {
-            binding = ((AnnotationTypeMemberDeclaration) original).resolveBinding();
+            binding = resolveBinding((AnnotationTypeMemberDeclaration) original);
         } else {
             throw new UnsupportedOperationException();
         }
@@ -4447,7 +4494,7 @@ public class CSharpBuilder extends ASTVisitor {
     public boolean visit(LambdaExpression node) {
         List<CSVariableDeclaration> args = new ArrayList<>();
         for (Object param : node.parameters()) {
-            IVariableBinding variableBinding = ((VariableDeclarationFragment) param).resolveBinding();
+            IVariableBinding variableBinding = resolveBinding(((VariableDeclarationFragment) param));
             args.add(new CSVariableDeclaration(variableBinding.getName(), mappedTypeReference(variableBinding.getType())));
         }
         CSNode body;

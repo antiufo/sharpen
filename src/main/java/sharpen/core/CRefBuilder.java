@@ -17,11 +17,11 @@ public class CRefBuilder {
         switch (_crefTarget.getNodeType()) {
             case ASTNode.SIMPLE_NAME:
             case ASTNode.QUALIFIED_NAME:
-                return mapCRefTarget(_crefTarget, ((Name) _crefTarget).resolveBinding());
+                return mapCRefTarget(_crefTarget, CSharpBuilder.resolveBindingOptional ((Name) _crefTarget));
             case ASTNode.MEMBER_REF:
-                return mapCRefTarget(_crefTarget, ((MemberRef) _crefTarget).resolveBinding());
+                return mapCRefTarget(_crefTarget,CSharpBuilder.resolveBindingOptional ((MemberRef) _crefTarget));
             case ASTNode.METHOD_REF:
-                return mapCRefTarget(_crefTarget, ((MethodRef) _crefTarget).resolveBinding());
+                return mapCRefTarget(_crefTarget, CSharpBuilder.resolveBindingOptional ((MethodRef) _crefTarget));
         }
         return null;
     }
@@ -157,5 +157,5 @@ public class CRefBuilder {
         return my(Configuration.class).mappedNamespace(namespace);
     }
 
-    private final ITypeBinding _currentType = my(NameScope.class).currentType().resolveBinding();
+    private final ITypeBinding _currentType = CSharpBuilder.resolveBinding;
 }

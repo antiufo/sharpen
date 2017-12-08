@@ -4,6 +4,8 @@ package sharpen.core.framework;
 
 import org.eclipse.jdt.core.dom.*;
 
+import sharpen.core.CSharpBuilder;
+
 import java.util.List;
 
 import static sharpen.core.framework.BindingUtils.isStatic;
@@ -11,7 +13,7 @@ import static sharpen.core.framework.BindingUtils.isStatic;
 public class StaticImports {
 
     public static boolean isStaticMethodImport(ImportDeclaration imp, IMethodBinding method) {
-        final IBinding binding = imp.resolveBinding();
+        final IBinding binding = CSharpBuilder.resolveBinding(imp);
         switch (binding.getKind()) {
             case IBinding.TYPE:
                 return imp.isOnDemand() && method.getDeclaringClass() == binding;
@@ -23,7 +25,7 @@ public class StaticImports {
     }
 
     public static boolean isStaticFieldImport(ImportDeclaration imp, IVariableBinding field) {
-        final IBinding binding = imp.resolveBinding();
+        final IBinding binding = CSharpBuilder.resolveBinding(imp);
         if (binding.getKind() == IBinding.VARIABLE)
             return binding == field;
 

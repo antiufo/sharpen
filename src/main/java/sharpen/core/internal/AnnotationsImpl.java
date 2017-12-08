@@ -4,6 +4,7 @@ package sharpen.core.internal;
 import org.eclipse.jdt.core.dom.*;
 import sharpen.core.Annotations;
 import sharpen.core.Bindings;
+import sharpen.core.CSharpBuilder;
 import sharpen.core.SharpenAnnotations;
 import sharpen.core.framework.BindingUtils;
 import sharpen.core.framework.JavadocUtility;
@@ -43,7 +44,7 @@ public class AnnotationsImpl implements Annotations {
     }
 
     private MethodDeclaration findOriginalMethodDeclaration(MethodDeclaration node) {
-        return (MethodDeclaration) findOriginalMethodDeclaration(node.resolveBinding());
+        return (MethodDeclaration) findOriginalMethodDeclaration(CSharpBuilder.resolveBinding(node));
     }
 
     private BodyDeclaration findOriginalMethodDeclaration(IMethodBinding binding) {
@@ -55,7 +56,7 @@ public class AnnotationsImpl implements Annotations {
     }
 
     private AnnotationTypeMemberDeclaration findOriginalMemberDeclaration(AnnotationTypeMemberDeclaration node) {
-        return (AnnotationTypeMemberDeclaration) findOriginalMethodDeclaration(node.resolveBinding());
+        return (AnnotationTypeMemberDeclaration) findOriginalMethodDeclaration(CSharpBuilder.resolveBinding(node));
     }
 
     public String annotatedPropertyName(MethodDeclaration node) {

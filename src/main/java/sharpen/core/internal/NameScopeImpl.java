@@ -2,6 +2,8 @@
 package sharpen.core.internal;
 
 import org.eclipse.jdt.core.dom.*;
+
+import sharpen.core.CSharpBuilder;
 import sharpen.core.Mappings;
 import sharpen.core.NameScope;
 import sharpen.core.SharpenAnnotations;
@@ -29,7 +31,7 @@ public class NameScopeImpl implements NameScope {
             if (meth.isConstructor()) {
                 continue;
             }
-            _mappedMethodDeclarations.add(my(Mappings.class).mappedMethodName(meth.resolveBinding()));
+            _mappedMethodDeclarations.add(my(Mappings.class).mappedMethodName(CSharpBuilder.resolveBinding(meth)));
         }
     }
 

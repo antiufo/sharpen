@@ -5,6 +5,8 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import sharpen.core.CSharpBuilder;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +26,7 @@ public class PreConvertVisitor extends ASTVisitor {
                 VariableDeclarationFragment fragment = (VariableDeclarationFragment) item;
                 String fieldName = fragment.getName().getIdentifier();
                 if (ASTUtility.hasMethodWithName(node, fieldName)) {
-	                renamingMap.put(fragment.getName().resolveBinding().getKey(), fieldName + "__");
+	                renamingMap.put(CSharpBuilder.resolveBinding(fragment.getName()).getKey(), fieldName + "__");
                 }
             }
         }
