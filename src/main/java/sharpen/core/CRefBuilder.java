@@ -157,5 +157,5 @@ public class CRefBuilder {
         return my(Configuration.class).mappedNamespace(namespace);
     }
 
-    private final ITypeBinding _currentType = CSharpBuilder.resolveBinding;
+    private final ITypeBinding _currentType = CSharpBuilder.resolveBinding(my(NameScope.class).currentType());
 }
